@@ -1,68 +1,69 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Electron with React
 
-## Available Scripts
+### steps
 
-In the project directory, you can run:
+1. run these commands on terminal :
 
-### `npm start`
+   1. npx create-react-app -your app name here-
+   2. npm install --save-dev electron electron-builder wait-on concurrently
+   3. npm install --save electron-is-dev
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+2. create electron.js file inside ./public/ folder and paste the code given bellow
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+```
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
-### `npm test`
+const path = require('path');
+const url = require('url');
+const isDev = require('electron-is-dev');
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+let mainWindow;
 
-### `npm run build`
+function createWindow() {
+  mainWindow = new BrowserWindow({width: 900, height: 680});
+  mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
+  mainWindow.on('closed', () => mainWindow = null);
+}
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+app.on('ready', createWindow);
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createWindow();
+  }
+});
 
-### `npm run eject`
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3. add "main": "public/electron.js" entry to package.json .
+4. add "electron-dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"" script to package.json
+5. add "build": {
+   "appId": "com.example.electron-cra",
+   "files": [
+   "build/**/*",
+   "node_modules/**/*"
+   ],
+   "directories":{
+   "buildResources": "assets"
+   }
+   } to package.json
+6. add following scripts to pachage.json
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+   1. "electron-pack": "build --em.main=build/electron.js"
+   2. "preelectron-pack": "npm run-script build",
+   3. "package-mac": "npm build && electron-builder build --mac",
+   4. "package-linux": "npm build && electron-builder build --linux",
+   5. "package-win": "npm build && electron-builder build --win --x64"
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+7. add "homepage": "./" entry to package.json
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+Now for development you can simply run "npm run electron-dev"
+To package it first run "npm run electron-pack" then "npm run package-mac/package-win/package-linux" (accourding to targeting OS)
